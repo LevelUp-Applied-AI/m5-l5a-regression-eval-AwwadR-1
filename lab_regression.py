@@ -6,7 +6,7 @@ Petra Telecom customer churn dataset.
 
 Run: python lab_regression.py
 """
-
+from pathlib import Path
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split, cross_val_score, StratifiedKFold
@@ -22,13 +22,14 @@ def load_data(filepath="data/telecom_churn.csv"):
     Returns:
         DataFrame with all columns.
     """
-    try:
-        df = pd.read_csv(filepath)
-        return df
-    except Exception as e:
-        print(f"Error loading data: {e}")
-        return None
-
+    path = Path(filepath)
+    if not path.exists():
+        # Support tests that pass a legacy "starter/data/..." path.
+        fallback = Path(__file__).resolve().parent / "data" / path.name
+        path = fallback if fallback.exists() else path
+    df = pd.read_csv(path)
+    return df
+    
 
 def split_data(df, target_col, test_size=0.2, random_state=42):
     """Split data into train and test sets with stratification.
@@ -216,7 +217,7 @@ if __name__ == "__main__":
 
 
 
-# # Summary of Findings:
+# Summary of Findings:
 # The most important features for churn prediction are tenure, monthly charges, and number of support calls, as these are related to customer status and  often influence a customer's decision to stay or leave.
 # By using the Logistic Regression model for predicting whether a customer would churn I noticed that the performance was at average level as the as it achieved an accuracy of approximately 63% and was able to recognize some customers who would actually leave.
 # In this problem recall is more important than precision, because failing to identify a customer who might leave is bigger issue than falsely predicting a customer who might not leave.

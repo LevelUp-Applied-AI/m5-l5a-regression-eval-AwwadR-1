@@ -14,6 +14,7 @@ from sklearn.linear_model import LogisticRegression, Ridge, Lasso
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import (classification_report, confusion_matrix, mean_absolute_error, r2_score, accuracy_score, precision_score, recall_score, f1_score)
+import matplotlib.pyplot as plt
 
 
 def load_data(filepath="data/telecom_churn.csv"):
@@ -178,6 +179,42 @@ def run_cross_validation(pipeline, X_train, y_train, cv=5):
         print(f"Error running cross-validation: {e}")
         return None
 
+def threshold_tuning(pipeline, X_train, X_test, y_train, y_test):
+    pipeline.fit(X_train, y_train)
+    y_probs = pipeline.predict_proba(X_test)[:, 1]
+
+    thresholds = [0.3, 0.4, 0.5, 0.6, 0.7]
+    results = []
+
+    for threshold in thresholds:
+        y_pred = (y_probs >= threshold).astype(int)
+
+        results.append({
+            "threshold": threshold,
+            "precision": precision_score(y_test, y_pred),
+            "recall": recall_score(y_test, y_pred),
+            "f1": f1_score(y_test, y_pred)
+        })
+
+    results_df = pd.DataFrame(results)
+    print("\nThreshold Tuning Results:")
+    print(results_df)
+
+    best_row = results_df.loc[results_df["f1"].idxmax()]
+    print("\nBest Threshold by F1:")
+    print(best_row)
+
+    plt.plot(results_df["threshold"], results_df["precision"], marker="o", label="Precision")
+    plt.plot(results_df["threshold"], results_df["recall"], marker="o", label="Recall")
+    plt.xlabel("Threshold")
+    plt.ylabel("Score")
+    plt.title("Precision and Recall vs Threshold")
+    plt.legend()
+    plt.grid(True)
+    plt.savefig("threshold_tuning_plot.png", dpi=300, bbox_inches="tight")
+    plt.show()
+
+    return results_df
 
 if __name__ == "__main__":
     df = load_data()
@@ -203,6 +240,8 @@ if __name__ == "__main__":
                 if scores is not None:
                     print(f"CV: {scores.mean():.3f} +/- {scores.std():.3f}")
 
+                threshold_tuning(pipe, X_train, X_test, y_train, y_test)
+
         # Regression: predict monthly_charges
         df_reg = df[["tenure", "total_charges", "num_support_calls",
                      "senior_citizen", "has_partner", "has_dependents",
@@ -215,11 +254,8 @@ if __name__ == "__main__":
                 reg_metrics = evaluate_regressor(ridge_pipe, X_tr, X_te, y_tr, y_te)
                 print(f"Ridge Regression: {reg_metrics}")
 
-
-
 # Summary of Findings:
 # The most important features for churn prediction are tenure, monthly charges, and number of support calls, as these are related to customer status and  often influence a customer's decision to stay or leave.
 # By using the Logistic Regression model for predicting whether a customer would churn I noticed that the performance was at average level as the as it achieved an accuracy of approximately 63% and was able to recognize some customers who would actually leave.
 # In this problem recall is more important than precision, because failing to identify a customer who might leave is bigger issue than falsely predicting a customer who might not leave.
 # However, the low precision shows that the model is still giving many incorrect predictions. To solve this I recommend optimizing used characteristics, adjusting the model settings, or trying threshold tuning.
-

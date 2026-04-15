@@ -15,6 +15,9 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import (classification_report, confusion_matrix, mean_absolute_error, r2_score, accuracy_score, precision_score, recall_score, f1_score)
 import matplotlib.pyplot as plt
+import json
+import warnings
+warnings.filterwarnings("ignore")
 
 
 def load_data(filepath="data/telecom_churn.csv"):
@@ -216,6 +219,94 @@ def threshold_tuning(pipeline, X_train, X_test, y_train, y_test):
 
     return results_df
 
+
+def load_model_config(filepath="model_config.json"):
+    """Load model configurations from a JSON file."""
+    try:
+        with open(filepath, "r") as f:
+            config = json.load(f)
+        return config
+    except Exception as e:
+        print(f"Error loading model config: {e}")
+        return None
+
+def create_model(model_type, params):
+    """Create a model based on type and parameters."""
+    if model_type == "logistic_regression":
+        return LogisticRegression(**params)
+    elif model_type == "ridge":
+        return Ridge(**params)
+    elif model_type == "lasso":
+        return Lasso(**params)
+    else:
+        raise ValueError(f"Unsupported model type: {model_type}")
+
+def build_pipeline_from_config(model_type, params):
+    """Build a pipeline with StandardScaler and a model from config."""
+    model = create_model(model_type, params)
+
+    pipeline = Pipeline([
+        ("scaler", StandardScaler()),
+        ("model", model)
+    ])
+
+    return pipeline
+
+def run_model_sweep(config, X_train_cls, y_train_cls, X_train_reg, y_train_reg):
+    """Run cross-validation for all model configurations and return a results table."""
+    results = []
+
+    for item in config["models"]:
+        name = item["name"]
+        model_type = item["type"]
+        task = item["task"]
+        params = item["params"]
+
+        pipeline = build_pipeline_from_config(model_type, params)
+
+        try:
+            if task == "classification":
+                cv_splitter = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+                scores = cross_val_score(
+                    pipeline,
+                    X_train_cls,
+                    y_train_cls,
+                    cv=cv_splitter,
+                    scoring="accuracy"
+                )
+
+            elif task == "regression":
+                scores = cross_val_score(
+                    pipeline,
+                    X_train_reg,
+                    y_train_reg,
+                    cv=5,
+                    scoring="r2"
+                )
+
+            else:
+                print(f"Unknown task type: {task}")
+                continue
+
+            results.append({
+                "name": name,
+                "type": model_type,
+                "task": task,
+                "mean_score": scores.mean(),
+                "std_score": scores.std()
+            })
+
+        except Exception as e:
+            print(f"Error running config {name}: {e}")
+
+    results_df = pd.DataFrame(results)
+    results_df = results_df.sort_values(by="mean_score", ascending=False)
+
+    print("\nModel Sweep Results:")
+    print(results_df)
+
+    return results_df
+
 if __name__ == "__main__":
     df = load_data()
     if df is not None:
@@ -253,6 +344,12 @@ if __name__ == "__main__":
             if ridge_pipe:
                 reg_metrics = evaluate_regressor(ridge_pipe, X_tr, X_te, y_tr, y_te)
                 print(f"Ridge Regression: {reg_metrics}")
+
+
+        # Tier 2: Config-driven model sweep
+        config = load_model_config()
+        if config is not None and split and split_reg:
+            sweep_result = run_model_sweep(config, X_train, y_train, X_tr, y_tr)
 
 # Summary of Findings:
 # The most important features for churn prediction are tenure, monthly charges, and number of support calls, as these are related to customer status and  often influence a customer's decision to stay or leave.

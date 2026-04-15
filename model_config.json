@@ -1,0 +1,88 @@
+{
+  "models": [
+    {
+      "name": "logreg_l2_c1",
+      "type": "logistic_regression",
+      "task": "classification",
+      "params": {
+        "C": 1.0,
+        "penalty": "l2",
+        "solver": "lbfgs",
+        "max_iter": 1000,
+        "class_weight": "balanced",
+        "random_state": 42
+      }
+    },
+    {
+      "name": "logreg_l2_c05",
+      "type": "logistic_regression",
+      "task": "classification",
+      "params": {
+        "C": 0.5,
+        "penalty": "l2",
+        "solver": "lbfgs",
+        "max_iter": 1000,
+        "class_weight": "balanced",
+        "random_state": 42
+      }
+    },
+    {
+      "name": "logreg_l1_c1",
+      "type": "logistic_regression",
+      "task": "classification",
+      "params": {
+        "C": 1.0,
+        "penalty": "l1",
+        "solver": "liblinear",
+        "max_iter": 1000,
+        "class_weight": "balanced",
+        "random_state": 42
+      }
+    },
+    {
+      "name": "logreg_l1_c05",
+      "type": "logistic_regression",
+      "task": "classification",
+      "params": {
+        "C": 0.5,
+        "penalty": "l1",
+        "solver": "liblinear",
+        "max_iter": 1000,
+        "class_weight": "balanced",
+        "random_state": 42
+      }
+    },
+    {
+      "name": "ridge_alpha_1",
+      "type": "ridge",
+      "task": "regression",
+      "params": {
+        "alpha": 1.0
+      }
+    },
+    {
+      "name": "ridge_alpha_05",
+      "type": "ridge",
+      "task": "regression",
+      "params": {
+        "alpha": 0.5
+      }
+    },
+    {
+      "name": "lasso_alpha_01",
+      "type": "lasso",
+      "task": "regression",
+      "params": {
+        "alpha": 0.1
+      }
+    },
+    {
+      "name": "lasso_alpha_001",
+      "type": "lasso",
+      "task": "regression",
+      "params": {
+        "alpha": 0.01
+      }
+    }
+  ]
+}
